@@ -1,1 +1,240 @@
 
+<meta name='viewport' content='width=device-width, initial-scale=1'/><meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yelahanka</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f9fc;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .generated-link {
+            font-family: monospace;
+            word-break: break-word;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Survey Link Generator</h1>
+        <input type="file" id="fileInput" accept=".xlsx, .xls">
+        <table id="linkTable">
+            <thead>
+                <tr>
+                    <th>Receipt No.</th>
+                    <th>Sales Type</th>
+                    <th>Survey Model</th>
+                    <th>Generated Link</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button onclick="copyLinks()">Copy All Links</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        const storeID = "91KDIPL540-01";
+
+        function convertExcelDate(serial) {
+            const date = new Date((serial - 25569) * 86400 * 1000);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function convertExcelTime(serial) {
+            const totalMilliseconds = Math.round(serial * 24 * 60 * 60 * 1000);
+            const hours = String(Math.floor(totalMilliseconds / (60 * 60 * 1000))).padStart(2, '0');
+            const minutes = String(Math.floor((totalMilliseconds % (60 * 60 * 1000)) / (60 * 1000))).padStart(2, '0');
+            const seconds = String(Math.floor((totalMilliseconds % (60 * 1000)) / 1000)).padStart(2, '0');
+            const milliseconds = String(totalMilliseconds % 1000).padStart(3, '0');
+            return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+        }
+
+        function generateSurveyLink(row) {
+            const receiptNo = row['Receipt No.'];
+            const salesType = row['Sales Type'];
+
+            let surveyModel = '';
+            let orderID = '';
+            let numericOT = '';
+
+            // Rule 1: Completely numeric Receipt No. with TAKEAWAY
+            if (/^\d+$/.test(receiptNo) && salesType === 'TAKEAWAY') {
+                surveyModel = '6.0';
+                orderID = receiptNo;
+                numericOT = '2';
+            }
+            // Rule 2: Completely numeric Receipt No. with DINE-IN
+            else if (/^\d+$/.test(receiptNo) && salesType === 'DINE-IN') {
+                surveyModel = '6.0';
+                orderID = receiptNo;
+                numericOT = '1';
+            }
+            // Rule 3: Receipt No. starts with K214 and TAKEAWAY
+            else if (receiptNo.startsWith('K214') && salesType === 'TAKEAWAY') {
+                surveyModel = '4.0';
+                orderID = receiptNo.slice(-4);
+                numericOT = '2';
+            }
+            // Rule 4: Receipt No. starts with K214 and DINE-IN
+            else if (receiptNo.startsWith('K214') && salesType === 'DINE-IN') {
+                surveyModel = '4.0';
+                orderID = receiptNo.slice(-4);
+                numericOT = '1';
+            }
+            // Rule 5: Receipt No. starts with K214 and DELIVERY
+            else if (receiptNo.startsWith('K214') && salesType === 'DELIVERY') {
+                surveyModel = '3.0';
+                orderID = receiptNo;
+                numericOT = '3';
+            }
+            // If no rules match, return null
+            else {
+                return null;
+            }
+
+            // Date and Time Processing
+            const date = convertExcelDate(row['Date']);
+            const time = convertExcelTime(row['Time']);
+            const phoneNumber = `91${row['Sell-to Contact No.']}`;
+            const isoDateTime = `${date}T${time}Z`;
+
+            // Data Payload for Survey Link
+            const data = {
+                "S": storeID,
+                "OI": orderID,
+                "D": date,
+                "TM": time,
+                "DTM": isoDateTime,
+                "TI": orderID,
+                "OT": numericOT,
+                "SM": surveyModel,
+                "PH": phoneNumber
+            };
+
+            // Generate Encoded Link
+            const encodedData = btoa(JSON.stringify(data));
+            return `https://customer.kfc-listens.com/jfe/form/SV_8bHC0noyvM3jPWC?Q_EED=${encodedData}`;
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                const tableBody = document.querySelector('#linkTable tbody');
+                tableBody.innerHTML = ''; // Clear previous data
+
+                sheetData
+                    .filter(row => {
+                        const posReceipt = row['POS Receipt No.'] || '';
+                        return !(
+                            posReceipt.includes('K214SWG') || 
+                            posReceipt.includes('K214ZMT') || 
+                            posReceipt.includes('K214MAGIC')
+                        );
+                    })
+                    .forEach(row => {
+                        const link = generateSurveyLink(row);
+                        
+                        if (link) {
+                            const newRow = document.createElement('tr');
+                            newRow.innerHTML = `
+                                <td>${row['Receipt No.']}</td>
+                                <td>${row['Sales Type']}</td>
+                                <td>${link.includes('SM=6.0') ? '6.0' : 
+                                       link.includes('SM=4.0') ? '4.0' : 
+                                       link.includes('SM=3.0') ? '3.0' : 'Unknown'}</td>
+                                <td class="generated-link">${link}</td>
+                            `;
+                            tableBody.appendChild(newRow);
+                        }
+                    });
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
+
+        function copyLinks() {
+            const links = Array.from(document.querySelectorAll('.generated-link')).map(cell => cell.textContent).join('\n');
+            navigator.clipboard.writeText(links).then(() => {
+                alert('Links copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy links: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
