@@ -130,15 +130,15 @@
                 surveyModel = '6.0';
                 orderID = receiptNo;
                 numericOT = '1';
-            } else if (receiptNo.startsWith('K260') && salesType === 'TAKEAWAY') {
+            } else if (receiptNo.startsWith('K214') && salesType === 'TAKEAWAY') {
                 surveyModel = '4.0';
                 orderID = receiptNo.slice(-4);
                 numericOT = '2';
-            } else if (receiptNo.startsWith('K260') && salesType === 'DINE-IN') {
+            } else if (receiptNo.startsWith('K214') && salesType === 'DINE-IN') {
                 surveyModel = '4.0';
                 orderID = receiptNo.slice(-4);
                 numericOT = '1';
-            } else if (receiptNo.startsWith('K260') && salesType === 'DELIVERY') {
+            } else if (receiptNo.startsWith('K214') && salesType === 'DELIVERY') {
                 surveyModel = '3.0';
                 orderID = receiptNo;
                 numericOT = '3';
@@ -186,9 +186,9 @@
                     .filter(row => {
                         const posReceipt = row['POS Receipt No.'] || '';
                         return !(
-                            posReceipt.includes('K260SWG') || 
-                            posReceipt.includes('K260ZMT') || 
-                            posReceipt.includes('K260MAGIC')
+                            posReceipt.includes('K214SWG') || 
+                            posReceipt.includes('K214ZMT') || 
+                            posReceipt.includes('K214MAGIC')
                         );
                     })
                     .forEach(row => {
