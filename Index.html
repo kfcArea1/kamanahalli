@@ -1,5 +1,4 @@
-
-<meta name='viewport' content='width=device-width, initial-scale=1'/><meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -123,48 +122,35 @@
             let orderID = '';
             let numericOT = '';
 
-            // Rule 1: Completely numeric Receipt No. with TAKEAWAY
             if (/^\d+$/.test(receiptNo) && salesType === 'TAKEAWAY') {
                 surveyModel = '6.0';
                 orderID = receiptNo;
                 numericOT = '2';
-            }
-            // Rule 2: Completely numeric Receipt No. with DINE-IN
-            else if (/^\d+$/.test(receiptNo) && salesType === 'DINE-IN') {
+            } else if (/^\d+$/.test(receiptNo) && salesType === 'DINE-IN') {
                 surveyModel = '6.0';
                 orderID = receiptNo;
                 numericOT = '1';
-            }
-            // Rule 3: Receipt No. starts with K214 and TAKEAWAY
-            else if (receiptNo.startsWith('K214') && salesType === 'TAKEAWAY') {
+            } else if (receiptNo.startsWith('K260') && salesType === 'TAKEAWAY') {
                 surveyModel = '4.0';
                 orderID = receiptNo.slice(-4);
                 numericOT = '2';
-            }
-            // Rule 4: Receipt No. starts with K214 and DINE-IN
-            else if (receiptNo.startsWith('K214') && salesType === 'DINE-IN') {
+            } else if (receiptNo.startsWith('K260') && salesType === 'DINE-IN') {
                 surveyModel = '4.0';
                 orderID = receiptNo.slice(-4);
                 numericOT = '1';
-            }
-            // Rule 5: Receipt No. starts with K214 and DELIVERY
-            else if (receiptNo.startsWith('K214') && salesType === 'DELIVERY') {
+            } else if (receiptNo.startsWith('K260') && salesType === 'DELIVERY') {
                 surveyModel = '3.0';
                 orderID = receiptNo;
                 numericOT = '3';
-            }
-            // If no rules match, return null
-            else {
+            } else {
                 return null;
             }
 
-            // Date and Time Processing
             const date = convertExcelDate(row['Date']);
             const time = convertExcelTime(row['Time']);
             const phoneNumber = `91${row['Sell-to Contact No.']}`;
             const isoDateTime = `${date}T${time}Z`;
 
-            // Data Payload for Survey Link
             const data = {
                 "S": storeID,
                 "OI": orderID,
@@ -177,7 +163,6 @@
                 "PH": phoneNumber
             };
 
-            // Generate Encoded Link
             const encodedData = btoa(JSON.stringify(data));
             return `https://customer.kfc-listens.com/jfe/form/SV_8bHC0noyvM3jPWC?Q_EED=${encodedData}`;
         }
@@ -195,15 +180,15 @@
                 const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
                 const tableBody = document.querySelector('#linkTable tbody');
-                tableBody.innerHTML = ''; // Clear previous data
+                tableBody.innerHTML = ''; 
 
                 sheetData
                     .filter(row => {
                         const posReceipt = row['POS Receipt No.'] || '';
                         return !(
-                            posReceipt.includes('K214SWG') || 
-                            posReceipt.includes('K214ZMT') || 
-                            posReceipt.includes('K214MAGIC')
+                            posReceipt.includes('K260SWG') || 
+                            posReceipt.includes('K260ZMT') || 
+                            posReceipt.includes('K260MAGIC')
                         );
                     })
                     .forEach(row => {
@@ -235,6 +220,15 @@
                 console.error('Failed to copy links: ', err);
             });
         }
+
+        document.addEventListener("contextmenu", (event) => event.preventDefault());
+
+        document.addEventListener("keydown", (event) => {
+            if (event.ctrlKey && ["u", "U", "I", "J", "C"].includes(event.key) || event.key === "F12") {
+                event.preventDefault();
+            }
+        });
+
     </script>
 </body>
 </html>
